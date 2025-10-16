@@ -1,43 +1,45 @@
 import {
   Args,
   Client,
-  IAccount,
-  IBaseAccount,
-  IClientConfig,
-  IOperationData,
   IProvider,
   ProviderType,
-  WalletProviderAccount, // Import WalletProviderAccount instead of Account
+  ReadSCData,
+  MAX_GAS_EXECUTE,
 } from '@massalabs/massa-web3';
+import {
+  getWallets,
+  Wallet,
+  IAccount as WalletAccount,
+} from '@massalabs/wallet-provider';
 
 export class MassaWeb3Adapter {
+  private wallet: Wallet | null = null;
+  private account: WalletAccount | null = null;
   private client: Client | null = null;
-  private account: IBaseAccount | null = null; // Use IBaseAccount type
 
   async connect(): Promise<boolean> {
     try {
-      if (typeof window.massa !== 'undefined') {
-        await window.massa.request({ method: 'wallet_enable' });
+      const wallets = await getWallets();
+      const massaStation = wallets.find(
+        (wallet) => wallet.name() === 'MassaStation',
+      );
 
-        const accounts: IAccount[] = await window.massa.request({
-          method: 'wallet_getAccounts',
-        });
-
-        if (accounts && accounts.length > 0) {
-          // Create a WalletProviderAccount instance
-          this.account = new WalletProviderAccount(accounts[0]);
-
+      if (massaStation) {
+        this.wallet = massaStation;
+        if (!this.wallet.connected()) {
+          await this.wallet.connect();
+        }
+        const accounts = await this.wallet.accounts();
+        if (accounts.length > 0) {
+          this.account = accounts[0];
           const providers: IProvider[] = [
             { url: 'https://test.massa.net/api/v2', type: ProviderType.PUBLIC },
           ];
-          const clientConfig: IClientConfig = {
+          this.client = new Client({
             providers,
             retryStrategyOn: true,
             periodOffset: 10,
-          };
-
-          this.client = new Client(clientConfig, this.account);
-
+          }, this.account);
           return true;
         }
       }
@@ -53,19 +55,21 @@ export class MassaWeb3Adapter {
     functionName: string,
     parameter: string,
     coins: string = '0',
-  ): Promise<IOperationData> {
+  ): Promise<string> {
     if (!this.client || !this.account) {
       throw new Error('Wallet not connected');
     }
 
-    return await this.client.smartContracts().callSmartContract({
+    const op = await this.client.smartContracts().callSmartContract({
       targetAddress: target,
       functionName: functionName,
       parameter: new Args().addString(parameter).serialize(),
       coins: BigInt(coins),
-      fee: BigInt(10000000), // 0.01 MASSA
-      maxGas: BigInt(2000000),
+      fee: 0n,
+      maxGas: MAX_GAS_EXECUTE,
     });
+
+    return op.operationId;
   }
 
   async readContract(
@@ -77,11 +81,11 @@ export class MassaWeb3Adapter {
       throw new Error('Client not initialized');
     }
 
-    const result = await this.client.smartContracts().readSmartContract({
+    const result: ReadSCData = await this.client.smartContracts().readSmartContract({
       targetAddress: target,
       targetFunction: functionName,
       parameter: new Args().addString(parameter).serialize(),
-      maxGas: BigInt(2000000), // Added maxGas property
+      maxGas: MAX_GAS_EXECUTE,
     });
 
     return new TextDecoder().decode(new Uint8Array(result.returnValue));
@@ -89,24 +93,22 @@ export class MassaWeb3Adapter {
 
   async getBalance(address?: string): Promise<string> {
     if (!this.client) throw new Error('Client not initialized');
+    const addr = address || this.account?.address();
+    if (!addr) return '0';
 
-    const balance = await this.client.wallet().getAccountBalance(
-      address || (await this.account?.address()) || '', // Use address() method
-    );
-
-    return balance?.final?.toString() || '0';
+    const balance = await this.client.wallet().getAccountBalance(addr);
+    return balance?.final.toString() || '0';
   }
 
   onAccountsChanged(callback: (accounts: string[]) => void): void {
-    if (typeof window.massa !== 'undefined') {
-      window.massa.on('accountsChanged', callback);
-    }
+    this.wallet?.listenAccountChanges({
+      onAccountChanged: (address: string) => callback(address ? [address] : []),
+    });
   }
 
   onDisconnect(callback: () => void): void {
-    if (typeof window.massa !== 'undefined') {
-      window.massa.on('disconnect', callback);
-    }
+    // This is a placeholder as wallet-provider does not have a generic 'disconnect' event.
+    console.warn('onDisconnect is not fully supported by the current provider.');
   }
 }
 
