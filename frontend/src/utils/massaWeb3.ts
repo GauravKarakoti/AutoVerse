@@ -1,45 +1,37 @@
 import {
   Args,
-  Client,
-  IProvider,
-  ProviderType,
+  JsonRpcProvider,
+  JsonRpcPublicProvider, // Import JsonRpcPublicProvider
   ReadSCData,
   MAX_GAS_EXECUTE,
 } from '@massalabs/massa-web3';
 import {
   getWallets,
   Wallet,
-  IAccount as WalletAccount,
+  MassaStationAccount,
 } from '@massalabs/wallet-provider';
 
 export class MassaWeb3Adapter {
   private wallet: Wallet | null = null;
-  private account: WalletAccount | null = null;
-  private client: Client | null = null;
+  private account: MassaStationAccount | null = null;
+  private client: JsonRpcPublicProvider | null = null; // Use JsonRpcPublicProvider
 
   async connect(): Promise<boolean> {
     try {
       const wallets = await getWallets();
       const massaStation = wallets.find(
-        (wallet) => wallet.name() === 'MassaStation',
+        (wallet) => (wallet.name() as string) === 'MassaStation',
       );
 
       if (massaStation) {
         this.wallet = massaStation;
-        if (!this.wallet.connected()) {
+        if (!(await this.wallet.connected())) {
           await this.wallet.connect();
         }
         const accounts = await this.wallet.accounts();
         if (accounts.length > 0) {
-          this.account = accounts[0];
-          const providers: IProvider[] = [
-            { url: 'https://test.massa.net/api/v2', type: ProviderType.PUBLIC },
-          ];
-          this.client = new Client({
-            providers,
-            retryStrategyOn: true,
-            periodOffset: 10,
-          }, this.account);
+          this.account = accounts[0] as MassaStationAccount;
+          this.client = await JsonRpcProvider.fromRPCUrl('https://test.massa.net/api/v2');
           return true;
         }
       }
@@ -56,20 +48,20 @@ export class MassaWeb3Adapter {
     parameter: string,
     coins: string = '0',
   ): Promise<string> {
-    if (!this.client || !this.account) {
+    if (!this.account) {
       throw new Error('Wallet not connected');
     }
 
-    const op = await this.client.smartContracts().callSmartContract({
-      targetAddress: target,
-      functionName: functionName,
+    const op = await this.account.callSC({
+      target,
+      func: functionName,
       parameter: new Args().addString(parameter).serialize(),
       coins: BigInt(coins),
       fee: 0n,
       maxGas: MAX_GAS_EXECUTE,
     });
 
-    return op.operationId;
+    return op.id; // Use 'id' instead of 'operationId'
   }
 
   async readContract(
@@ -81,28 +73,29 @@ export class MassaWeb3Adapter {
       throw new Error('Client not initialized');
     }
 
-    const result: ReadSCData = await this.client.smartContracts().readSmartContract({
-      targetAddress: target,
-      targetFunction: functionName,
+    const result: ReadSCData = await this.client.readSC({
+      target,
+      func: functionName,
       parameter: new Args().addString(parameter).serialize(),
       maxGas: MAX_GAS_EXECUTE,
     });
 
-    return new TextDecoder().decode(new Uint8Array(result.returnValue));
+    return new TextDecoder().decode(new Uint8Array(result.value));
   }
 
   async getBalance(address?: string): Promise<string> {
     if (!this.client) throw new Error('Client not initialized');
-    const addr = address || this.account?.address();
+    const addr = address || this.account?.address;
     if (!addr) return '0';
 
-    const balance = await this.client.wallet().getAccountBalance(addr);
-    return balance?.final.toString() || '0';
+    // Use balanceOf to get the balance
+    const balance = await this.client.balanceOf([addr]);
+    return balance[0]?.balance.toString() || '0';
   }
 
   onAccountsChanged(callback: (accounts: string[]) => void): void {
-    this.wallet?.listenAccountChanges({
-      onAccountChanged: (address: string) => callback(address ? [address] : []),
+    this.wallet?.listenAccountChanges((address: string) => {
+      callback(address ? [address] : []);
     });
   }
 

@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { VaultCreator } from './components/VaultCreator';
 import { VaultDashboard } from './components/VaultDashboard';
 import { useVaults } from './hooks/useVaults';
 import { massaWeb3 } from './utils/massaWeb3';
+import './App.css'
 
 function App() {
   const [isConnected, setIsConnected] = useState(false);
@@ -103,17 +104,3 @@ function App() {
 }
 
 export default App;
-EOF
-
-# Create main entry point
-cat > main.tsx << 'EOF'
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App'
-import './styles/globals.css'
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)
