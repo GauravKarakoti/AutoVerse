@@ -1,27 +1,32 @@
 import {
+  Args,
   Client,
   IAccount,
+  IBaseAccount,
+  IClientConfig,
   IOperationData,
   IProvider,
   ProviderType,
-  IClientConfig,
+  WalletProviderAccount, // Import WalletProviderAccount instead of Account
 } from '@massalabs/massa-web3';
 
 export class MassaWeb3Adapter {
   private client: Client | null = null;
-  private account: IAccount | null = null;
+  private account: IBaseAccount | null = null; // Use IBaseAccount type
 
   async connect(): Promise<boolean> {
     try {
       if (typeof window.massa !== 'undefined') {
         await window.massa.request({ method: 'wallet_enable' });
 
-        const accounts = await window.massa.request({
+        const accounts: IAccount[] = await window.massa.request({
           method: 'wallet_getAccounts',
         });
 
         if (accounts && accounts.length > 0) {
-          this.account = accounts[0];
+          // Create a WalletProviderAccount instance
+          this.account = new WalletProviderAccount(accounts[0]);
+
           const providers: IProvider[] = [
             { url: 'https://test.massa.net/api/v2', type: ProviderType.PUBLIC },
           ];
@@ -30,7 +35,8 @@ export class MassaWeb3Adapter {
             retryStrategyOn: true,
             periodOffset: 10,
           };
-          this.client = new Client(clientConfig);
+
+          this.client = new Client(clientConfig, this.account);
 
           return true;
         }
@@ -55,9 +61,10 @@ export class MassaWeb3Adapter {
     return await this.client.smartContracts().callSmartContract({
       targetAddress: target,
       functionName: functionName,
-      parameter: parameter,
+      parameter: new Args().addString(parameter).serialize(),
       coins: BigInt(coins),
       fee: BigInt(10000000), // 0.01 MASSA
+      maxGas: BigInt(2000000),
     });
   }
 
@@ -73,12 +80,10 @@ export class MassaWeb3Adapter {
     const result = await this.client.smartContracts().readSmartContract({
       targetAddress: target,
       targetFunction: functionName,
-      parameter: parameter,
+      parameter: new Args().addString(parameter).serialize(),
+      maxGas: BigInt(2000000), // Added maxGas property
     });
-    
-    // The result from readSmartContract is an array of bytes, so we need to decode it.
-    // This is a basic example; you might need a more sophisticated deserializer
-    // depending on the return type of your contract function.
+
     return new TextDecoder().decode(new Uint8Array(result.returnValue));
   }
 
@@ -86,7 +91,7 @@ export class MassaWeb3Adapter {
     if (!this.client) throw new Error('Client not initialized');
 
     const balance = await this.client.wallet().getAccountBalance(
-      address || this.account?.address || '',
+      address || (await this.account?.address()) || '', // Use address() method
     );
 
     return balance?.final?.toString() || '0';

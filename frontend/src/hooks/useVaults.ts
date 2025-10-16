@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { VaultData, VaultConfig } from '../types';
 import { massaWeb3 } from '../utils/massaWeb3';
+import { IOperationData } from '@massalabs/massa-web3'; // Import IOperationData
 
 const CONTRACT_ADDRESS = 'AS1yourContractAddressHere123456789'; // Replace with actual
 
@@ -61,13 +62,13 @@ export const useVaults = () => {
     }
   }, []);
 
-  const createVault = useCallback(async (config: VaultConfig): Promise<string> => {
+  const createVault = useCallback(async (config: VaultConfig): Promise<IOperationData> => { // Return IOperationData
     try {
       setLoading(true);
       setError(null);
 
       const parameter = `${config.baseToken},${config.targetToken},${config.interval},${config.amount},${config.autoCompound ? 1 : 0}`;
-      
+
       const result = await massaWeb3.callContract(
         CONTRACT_ADDRESS,
         'createVault',
@@ -77,8 +78,8 @@ export const useVaults = () => {
 
       // Refresh vaults list
       await fetchUserVaults();
-      
-      return result.operationId;
+
+      return result; // Return the full result object
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create vault';
       setError(message);
