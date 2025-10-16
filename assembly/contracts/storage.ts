@@ -1,4 +1,6 @@
-import { VaultData, Address } from "./types";
+import { VaultData, Address, VaultConfig } from "./types";
+import { Storage } from '@massalabs/massa-as-sdk';
+import { stringToBytes, bytesToString } from "@massalabs/as-types";
 
 export class VaultStorage {
   private static readonly VAULT_PREFIX = "vault_";
@@ -7,26 +9,33 @@ export class VaultStorage {
 
   static set(vaultId: string, data: VaultData): void {
     const serialized = this.serializeVaultData(data);
-    Storage.setData(this.VAULT_PREFIX + vaultId, serialized);
+    Storage.set(stringToBytes(this.VAULT_PREFIX + vaultId), stringToBytes(serialized));
   }
 
   static get(vaultId: string): VaultData | null {
-    const serialized = Storage.getData(this.VAULT_PREFIX + vaultId);
-    return serialized ? this.deserializeVaultData(serialized) : null;
+    if (!Storage.has(stringToBytes(this.VAULT_PREFIX + vaultId))) {
+      return null;
+    }
+    const serialized = bytesToString(Storage.get(stringToBytes(this.VAULT_PREFIX + vaultId)));
+    return this.deserializeVaultData(serialized);
   }
 
   static delete(vaultId: string): void {
-    Storage.setData(this.VAULT_PREFIX + vaultId, "");
+    Storage.del(stringToBytes(this.VAULT_PREFIX + vaultId));
   }
 
   static addUserVault(user: Address, vaultId: string): void {
     const userVaults = this.getUserVaults(user);
     userVaults.push(vaultId);
-    Storage.setData(this.USER_VAULTS_PREFIX + user, userVaults.join(","));
+    Storage.set(stringToBytes(this.USER_VAULTS_PREFIX + user), stringToBytes(userVaults.join(",")));
   }
 
   static getUserVaults(user: Address): string[] {
-    const data = Storage.getData(this.USER_VAULTS_PREFIX + user);
+    const key = stringToBytes(this.USER_VAULTS_PREFIX + user);
+    if (!Storage.has(key)) {
+        return [];
+    }
+    const data = bytesToString(Storage.get(key));
     return data ? data.split(",").filter(id => id.length > 0) : [];
   }
 
@@ -34,12 +43,16 @@ export class VaultStorage {
     const activeVaults = this.getActiveVaults();
     if (!activeVaults.includes(vaultId)) {
       activeVaults.push(vaultId);
-      Storage.setData(this.ACTIVE_VAULTS_KEY, activeVaults.join(","));
+      Storage.set(stringToBytes(this.ACTIVE_VAULTS_KEY), stringToBytes(activeVaults.join(",")));
     }
   }
 
   static getActiveVaults(): string[] {
-    const data = Storage.getData(this.ACTIVE_VAULTS_KEY);
+    const key = stringToBytes(this.ACTIVE_VAULTS_KEY);
+    if (!Storage.has(key)) {
+        return [];
+    }
+    const data = bytesToString(Storage.get(key));
     return data ? data.split(",").filter(id => id.length > 0) : [];
   }
 
@@ -48,7 +61,7 @@ export class VaultStorage {
     const index = activeVaults.indexOf(vaultId);
     if (index > -1) {
       activeVaults.splice(index, 1);
-      Storage.setData(this.ACTIVE_VAULTS_KEY, activeVaults.join(","));
+      Storage.set(stringToBytes(this.ACTIVE_VAULTS_KEY), stringToBytes(activeVaults.join(",")));
     }
   }
 
@@ -61,12 +74,12 @@ export class VaultStorage {
     return new VaultData(
       new VaultConfig(
         parts[0], parts[1], parts[2],
-        u32(parseInt(parts[3])), u64(parseInt(parts[4])), parts[5] === "1"
+        U32.parseInt(parts[3]), U64.parseInt(parts[4]), parts[5] === "1"
       ),
-      u64(parseInt(parts[6])),
-      u32(parseInt(parts[7])),
-      u32(parseInt(parts[8])) as any,
-      u64(parseInt(parts[9]))
+      U64.parseInt(parts[6]),
+      U32.parseInt(parts[7]),
+      U32.parseInt(parts[8]) as any,
+      U64.parseInt(parts[9])
     );
   }
 }

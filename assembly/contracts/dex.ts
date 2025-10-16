@@ -1,9 +1,7 @@
 import { SwapResult, Address } from "./types";
+import { Context, generateEvent } from "@massalabs/massa-as-sdk";
 
 export class WAGMIDEX {
-  private static readonly DEX_ADDRESS = "AS12wagmiDEXAddress123456789012345";
-  private static readonly ROUTER_ADDRESS = "AS12wagmiRouter12345678901234567";
-
   static swapExactTokensForTokens(
     amountIn: u64,
     tokenIn: Address,
@@ -21,11 +19,11 @@ export class WAGMIDEX {
         transferSuccess,
         amountIn,
         simulatedOutput,
-        getCurrentPeriod()
+        Context.currentPeriod()
       );
     }
     
-    return new SwapResult(false, amountIn, 0, getCurrentPeriod());
+    return new SwapResult(false, amountIn, 0, Context.currentPeriod());
   }
 
   private static simulateSwap(amountIn: u64, tokenIn: Address, tokenOut: Address): u64 {

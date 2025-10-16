@@ -1,4 +1,11 @@
-import { Client, IAccount, IEvent, IOperation } from '@massalabs/massa-web3';
+import {
+  Client,
+  IAccount,
+  IOperationData,
+  IProvider,
+  ProviderType,
+  IClientConfig,
+} from '@massalabs/massa-web3';
 
 export class MassaWeb3Adapter {
   private client: Client | null = null;
@@ -8,19 +15,23 @@ export class MassaWeb3Adapter {
     try {
       if (typeof window.massa !== 'undefined') {
         await window.massa.request({ method: 'wallet_enable' });
-        
-        const accounts = await window.massa.request({ 
-          method: 'wallet_getAccounts' 
+
+        const accounts = await window.massa.request({
+          method: 'wallet_getAccounts',
         });
-        
+
         if (accounts && accounts.length > 0) {
           this.account = accounts[0];
-          this.client = new Client({
-            providers: [{ url: 'https://test.massa.net/api/v2' }],
+          const providers: IProvider[] = [
+            { url: 'https://test.massa.net/api/v2', type: ProviderType.PUBLIC },
+          ];
+          const clientConfig: IClientConfig = {
+            providers,
             retryStrategyOn: true,
-            periodOffset: 10
-          });
-          
+            periodOffset: 10,
+          };
+          this.client = new Client(clientConfig);
+
           return true;
         }
       }
@@ -33,27 +44,27 @@ export class MassaWeb3Adapter {
 
   async callContract(
     target: string,
-    function: string,
+    functionName: string,
     parameter: string,
-    coins: string = '0'
-  ): Promise<IOperation> {
+    coins: string = '0',
+  ): Promise<IOperationData> {
     if (!this.client || !this.account) {
       throw new Error('Wallet not connected');
     }
 
     return await this.client.smartContracts().callSmartContract({
       targetAddress: target,
-      functionName: function,
+      functionName: functionName,
       parameter: parameter,
       coins: BigInt(coins),
-      fee: BigInt(10000000) // 0.01 MASSA
+      fee: BigInt(10000000), // 0.01 MASSA
     });
   }
 
   async readContract(
     target: string,
-    function: string,
-    parameter: string = ''
+    functionName: string,
+    parameter: string = '',
   ): Promise<string> {
     if (!this.client) {
       throw new Error('Client not initialized');
@@ -61,21 +72,24 @@ export class MassaWeb3Adapter {
 
     const result = await this.client.smartContracts().readSmartContract({
       targetAddress: target,
-      targetFunction: function,
-      parameter: parameter
+      targetFunction: functionName,
+      parameter: parameter,
     });
-
-    return result.returnValue;
+    
+    // The result from readSmartContract is an array of bytes, so we need to decode it.
+    // This is a basic example; you might need a more sophisticated deserializer
+    // depending on the return type of your contract function.
+    return new TextDecoder().decode(new Uint8Array(result.returnValue));
   }
 
   async getBalance(address?: string): Promise<string> {
     if (!this.client) throw new Error('Client not initialized');
-    
+
     const balance = await this.client.wallet().getAccountBalance(
-      address || this.account?.address || ''
+      address || this.account?.address || '',
     );
-    
-    return balance?.finalBalance?.toString() || '0';
+
+    return balance?.final?.toString() || '0';
   }
 
   onAccountsChanged(callback: (accounts: string[]) => void): void {

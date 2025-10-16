@@ -1,6 +1,5 @@
 import React from 'react';
 import { VaultData } from '../types';
-import { useVaults } from '../hooks/useVaults';
 
 interface VaultDashboardProps {
   vaults: VaultData[];

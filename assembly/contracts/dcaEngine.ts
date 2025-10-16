@@ -1,6 +1,14 @@
-import { VaultStorage, VaultData, VaultConfig, VaultStatus, Address } from "./types";
-import { WAGMIDEX } from "./dex";
-import { MassaStaking } from "./staking";
+import {
+  Context,
+  deferredCallRegister,
+  generateEvent,
+  Slot,
+} from '@massalabs/massa-as-sdk';
+import { Args } from '@massalabs/as-types';
+import { VaultStorage } from './storage';
+import { VaultConfig, VaultData, VaultStatus, Address } from './types';
+import { WAGMIDEX } from './dex';
+import { MassaStaking } from './staking';
 
 export class DCAEngine {
   private static readonly MAX_BATCH_SIZE: u32 = 8;
@@ -8,10 +16,10 @@ export class DCAEngine {
   static initializeVault(vaultId: string, config: VaultConfig): void {
     const vaultData = new VaultData(
       config,
-      getCurrentPeriod() + config.interval,
+      Context.currentPeriod() + config.interval,
       0,
       VaultStatus.ACTIVE,
-      getCurrentPeriod()
+      Context.currentPeriod(),
     );
 
     VaultStorage.set(vaultId, vaultData);
@@ -31,7 +39,7 @@ export class DCAEngine {
     }
 
     // Check if it's time to execute
-    if (getCurrentPeriod() < vault.nextExecution) {
+    if (Context.currentPeriod() < vault.nextExecution) {
       return;
     }
 
@@ -40,7 +48,7 @@ export class DCAEngine {
       vault.config.amount,
       vault.config.baseToken,
       vault.config.targetToken,
-      vault.config.owner
+      vault.config.owner,
     );
 
     if (swapResult.success && swapResult.amountOut > 0) {
@@ -51,14 +59,16 @@ export class DCAEngine {
 
       // Update vault state
       vault.totalExecutions++;
-      vault.nextExecution = getCurrentPeriod() + vault.config.interval;
+      vault.nextExecution = Context.currentPeriod() + vault.config.interval;
 
       VaultStorage.set(vaultId, vault);
 
       // Schedule next execution
       this.scheduleExecution(vaultId, vault.config.interval);
 
-      generateEvent(`DCAExecuted: ${vaultId} swapped ${vault.config.amount} for ${swapResult.amountOut}`);
+      generateEvent(
+        `DCAExecuted: ${vaultId} swapped ${vault.config.amount} for ${swapResult.amountOut}`,
+      );
     } else {
       // Mark vault as having insufficient balance
       vault.status = VaultStatus.INSUFFICIENT_BALANCE;
@@ -70,7 +80,7 @@ export class DCAEngine {
   }
 
   static executeBatchDCA(vaultIds: string[]): void {
-    for (let i = 0; i < min(vaultIds.length, this.MAX_BATCH_SIZE); i++) {
+    for (let i = 0; i < Math.min(vaultIds.length, this.MAX_BATCH_SIZE); i++) {
       this.executeDCA(vaultIds[i]);
     }
 
@@ -82,22 +92,37 @@ export class DCAEngine {
   }
 
   private static scheduleExecution(vaultId: string, interval: u32): void {
-    const slotsToWait = interval * 30; // 30 slots per hour (120s blocks)
-    deferredCall(
-      getCurrentSlot() + slotsToWait,
-      getCurrentThread(),
-      "executeDCA",
-      vaultId
+    const maxGas: u64 = 200000; // Gas limit for the execution
+    const coins: u64 = 0; // Coins to be sent with the call
+    const targetPeriod = Context.currentPeriod() + interval;
+    const targetThread = Context.currentThread();
+    const targetSlot: Slot = new Slot(targetPeriod, targetThread);
+
+    deferredCallRegister(
+      Context.callee() as unknown as string,
+      'executeDCA',
+      targetSlot,
+      maxGas,
+      new Args().add(vaultId).serialize(),
+      coins,
     );
   }
 
   private static scheduleBatchExecution(vaultIds: string[]): void {
     const nextBatch = vaultIds.slice(0, this.MAX_BATCH_SIZE);
-    deferredCall(
-      getCurrentSlot() + 5, // 5 slots = ~10 minutes
-      getCurrentThread(),
-      "executeBatchDCA",
-      nextBatch.join(",")
+    const maxGas: u64 = 1000000; // Gas limit for the batch execution
+    const coins: u64 = 0; // Coins to be sent with the call
+    const targetPeriod = Context.currentPeriod() + 5; // 5 periods from now
+    const targetThread = Context.currentThread();
+    const targetSlot: Slot = new Slot(targetPeriod, targetThread);
+
+    deferredCallRegister(
+      Context.callee() as unknown as string,
+      'executeBatchDCA',
+      targetSlot,
+      maxGas,
+      new Args().add(nextBatch.join(',')).serialize(),
+      coins,
     );
   }
 

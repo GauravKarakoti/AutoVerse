@@ -1,8 +1,7 @@
 import { Address } from "./types";
+import { generateEvent } from '@massalabs/massa-as-sdk';
 
 export class MassaStaking {
-  private static readonly STAKING_CONTRACT = "AS12stakingContract123456789012345";
-
   static deposit(amount: u64, user: Address): boolean {
     // Simulate staking deposit
     // In production, this would call the actual staking contract

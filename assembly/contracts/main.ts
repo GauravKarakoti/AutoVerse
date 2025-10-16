@@ -1,6 +1,7 @@
 import { DCAEngine } from "./dcaEngine";
 import { VaultStorage } from "./storage";
-import { VaultConfig, Address } from "./types";
+import { VaultConfig } from "./types";
+import { Context, generateEvent } from '@massalabs/massa-as-sdk';
 
 // Contract entry points
 export function createVault(
@@ -11,7 +12,7 @@ export function createVault(
   autoCompound: boolean = true
 ): string {
   const caller = Context.caller().toString();
-  const vaultId = `vault_${getCurrentPeriod()}_${caller.slice(-8)}`;
+  const vaultId = `vault_${Context.currentPeriod()}_${caller.slice(-8)}`;
 
   const config = new VaultConfig(
     caller,
