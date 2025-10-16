@@ -1,0 +1,15 @@
+name: autoverse-contract
+version: 1.0.0
+description: Autonomous DCA Vault Contracts
+author: Autoverse Team
+license: MIT
+
+build:
+  entry: "assembly/contracts/main/.ts"
+  binary: "build/autoverse.wasm"
+
+deploy:
+  testnet:
+    account: "your_testnet_wallet"
+    fee: "0.01"
+    coins: "0.1"
