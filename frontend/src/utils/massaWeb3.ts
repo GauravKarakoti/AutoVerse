@@ -103,6 +103,7 @@ export class MassaWeb3Adapter {
   }
 
   onDisconnect(callback: () => void): void {
+    console.log(callback);
     // This is a placeholder as wallet-provider does not have a generic 'disconnect' event.
     console.warn('onDisconnect is not fully supported by the current provider.');
   }

@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/components/vaultcreator.tsx","./src/components/vaultdashboard.tsx","./src/hooks/usevaults.ts","./src/types/index.ts","./src/utils/massaweb3.ts"],"version":"5.9.3"}
