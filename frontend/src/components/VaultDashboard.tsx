@@ -29,7 +29,7 @@ export const VaultDashboard: React.FC<VaultDashboardProps> = ({
         <h2 className="text-2xl font-bold text-gray-800">Your DCA Vaults</h2>
         <button
           onClick={onRefresh}
-          className="bg-primary-500 text-white px-4 py-2 rounded-lg hover:bg-primary-600 transition-colors"
+          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
         >
           Refresh
         </button>

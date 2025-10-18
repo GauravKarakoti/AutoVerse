@@ -15,6 +15,7 @@ function App() {
     try {
       const connected = await massaWeb3.connect();
       setIsConnected(connected);
+      console.log('Wallet connected:', connected);
       
       if (connected) {
         massaWeb3.onAccountsChanged((accounts) => {
@@ -22,6 +23,7 @@ function App() {
             setIsConnected(false);
           } else {
             refreshVaults();
+            console.log('Accounts changed:', accounts);
           }
         });
         
@@ -50,7 +52,7 @@ function App() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary-50 to-blue-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
@@ -60,7 +62,7 @@ function App() {
           <button
             onClick={connectWallet}
             disabled={connecting}
-            className="w-full bg-primary-500 text-white py-3 px-4 rounded-lg hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 transition-colors"
+            className="w-full bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 transition-colors"
           >
             {connecting ? 'Connecting...' : 'Connect Massa Wallet'}
           </button>

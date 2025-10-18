@@ -1,26 +1,52 @@
-@import "tailwindcss";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  html {
-    font-family: 'Inter', system-ui, sans-serif;
-  }
-  
-  body {
-    @apply bg-gray-50;
-  }
+@import 'tailwindcss';
+/* Base styles */
+html {
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
-@layer components {
-  .btn-primary {
-    @apply bg-primary-500 text-white px-4 py-2 rounded-lg hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors;
-  }
-  
-  .btn-secondary {
-    @apply bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors;
-  }
+body {
+  background-color: #f9fafb; /* bg-gray-50 */
+}
+
+/* Buttons */
+.btn-primary {
+  background-color: #3b82f6; /* bg-blue-500 */
+  color: #ffffff;
+  padding: 0.5rem 1rem; /* px-4 py-2 */
+  border-radius: 0.5rem; /* rounded-lg */
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-duration: 150ms;
+}
+
+.btn-primary:hover {
+  background-color: #2563eb; /* bg-blue-600 */
+}
+
+.btn-primary:focus {
+  outline: none;
+  box-shadow:
+    0 0 0 2px #3b82f6, /* focus:ring-primary-500 */
+    0 0 0 4px #ffffff; /* focus:ring-offset-2 */
+}
+
+.btn-secondary {
+  background-color: #e5e7eb; /* bg-gray-200 */
+  color: #1f2937; /* text-gray-800 */
+  padding: 0.5rem 1rem; /* px-4 py-2 */
+  border-radius: 0.5rem; /* rounded-lg */
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-duration: 150ms;
+}
+
+.btn-secondary:hover {
+  background-color: #d1d5db; /* bg-gray-300 */
+}
+
+.btn-secondary:focus {
+  outline: none;
+  box-shadow:
+    0 0 0 2px #6b7280, /* focus:ring-gray-500 */
+    0 0 0 4px #ffffff; /* focus:ring-offset-2 */
 }
 
 /* Custom scrollbar */
@@ -29,13 +55,14 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100;
+  background-color: #f3f4f6; /* bg-gray-100 */
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-400 rounded-full;
+  background-color: #9ca3af; /* bg-gray-400 */
+  border-radius: 9999px; /* rounded-full */
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-500;
+  background-color: #6b7280; /* bg-gray-500 */
 }

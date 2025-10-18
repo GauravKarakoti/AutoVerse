@@ -20,17 +20,20 @@ export class MassaWeb3Adapter {
     try {
       const wallets = await getWallets();
       const massaStation = wallets.find(
-        (wallet) => (wallet.name() as string) === 'MassaStation',
+        (wallet) => (wallet.name() as string) === 'MASSA WALLET',
       );
+      console.log('Available wallets:', wallets.map(w => w.name()));
 
       if (massaStation) {
         this.wallet = massaStation;
         if (!(await this.wallet.connected())) {
           await this.wallet.connect();
+          console.log('Wallet connection initiated');
         }
         const accounts = await this.wallet.accounts();
         if (accounts.length > 0) {
           this.account = accounts[0] as MassaStationAccount;
+          console.log('Connected account:', this.account.address);
           this.client = await JsonRpcProvider.fromRPCUrl('https://test.massa.net/api/v2');
           return true;
         }
