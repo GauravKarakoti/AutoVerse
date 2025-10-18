@@ -3,7 +3,7 @@ import { VaultData, VaultConfig } from '../types';
 import { massaWeb3 } from '../utils/massaWeb3';
 // IOperationData is removed from here
 
-const CONTRACT_ADDRESS = 'AS1266zNf6AGQs8LFskr7dsa85pRLQTPw26sm732yqDSDeZQZHsEN';
+const CONTRACT_ADDRESS = 'AS1QujYj7xLqHJuy2vz8ma2kNTBZ446sfeQ1k1AaQUbWxi5SPF6L';
 
 export const useVaults = () => {
   const [vaults, setVaults] = useState<VaultData[]>([]);
@@ -17,20 +17,26 @@ export const useVaults = () => {
       setLoading(true);
       setError(null);
 
-      // Get user address (simplified)
-      const userVaults = await massaWeb3.readContract(
-        CONTRACT_ADDRESS,
-        'getUserVaults',
-        '' // User address would be parameter in production
+      const userVaultsResult = await massaWeb3.readContract(
+          CONTRACT_ADDRESS,
+          'getUserVaults',
+          '' // User address parameter
       );
-      console.log('Fetched user vaults:', userVaults);
+      console.log('Fetched user vaults raw:', userVaultsResult);
 
-      // Parse and fetch individual vault data
-      const vaultIds = userVaults.split(',').filter(id => id.length > 0);
+      let vaultIds: string[] = [];
+      if (userVaultsResult && !/^[\x00]*$/.test(userVaultsResult)) {
+          vaultIds = userVaultsResult.split(',').filter(id => id.length > 0 && !/^[\x00]*$/.test(id));
+      }
       const vaultsData: VaultData[] = [];
-      console.log('Vault IDs to fetch:', vaultIds);
+      console.log('Valid Vault IDs to fetch:', vaultIds);
 
       for (const vaultId of vaultIds) {
+        if (!vaultId || /^[\x00]*$/.test(vaultId)) {
+            console.warn('Skipping invalid vault ID:', vaultId);
+            continue;
+        }
+        
         const vaultInfo = await massaWeb3.readContract(
           CONTRACT_ADDRESS,
           'getVaultInfo',

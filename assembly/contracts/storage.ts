@@ -1,6 +1,7 @@
 import { VaultData, Address, VaultConfig, VaultStatus } from "./types";
 import { Storage } from '@massalabs/massa-as-sdk';
 import { stringToBytes, bytesToString } from "@massalabs/as-types";
+import { RegExp } from 'assemblyscript/std/assembly/regexp';
 
 export class VaultStorage {
   // Add ': string' type annotation to these lines
@@ -34,10 +35,34 @@ export class VaultStorage {
   static getUserVaults(user: Address): string[] {
     const key = stringToBytes(this.USER_VAULTS_PREFIX + user);
     if (!Storage.has(key)) {
-        return [];
+      return [];
     }
-    const data = bytesToString(Storage.get(key));
-    return data ? data.split(",").filter(id => id.length > 0) : [];
+    const rawBytes = Storage.get(key);
+    if (rawBytes.length === 0 || rawBytes.every(byte => byte === 0)) {
+      return [];
+    }
+    const data = bytesToString(rawBytes);
+
+    // Create a RegExp object
+    const nullByteRegex = new RegExp('^[\\x00]*$');
+
+    // Check the decoded string
+    if (!data || nullByteRegex.test(data)) {
+      return [];
+    }
+
+    // --- Start Change ---
+    // Replace filter with a for loop to avoid closure
+    const initialIds = data.split(",");
+    const filteredIds: string[] = [];
+    for (let i = 0; i < initialIds.length; i++) {
+        const id = initialIds[i];
+        if (id.length > 0 && !nullByteRegex.test(id)) {
+            filteredIds.push(id);
+        }
+    }
+    return filteredIds;
+    // --- End Change ---
   }
 
   static addActiveVault(vaultId: string): void {
@@ -72,15 +97,36 @@ export class VaultStorage {
 
   private static deserializeVaultData(serialized: string): VaultData {
     const parts = serialized.split(",");
+    // Ensure you handle potential parsing errors if parts aren't as expected
+    if (parts.length < 10) {
+      // Maybe throw an error or return a default/error state
+      // For now, let's assume it parses correctly or handle specific errors later
+      // This is just a placeholder comment for robustness
+    }
+    const owner = parts[0];
+    const baseToken = parts[1];
+    const targetToken = parts[2];
+    const interval = U32.parseInt(parts[3]);
+    const amount = U64.parseInt(parts[4]);
+    const autoCompound = parts[5] === "1";
+    const nextExecution = U64.parseInt(parts[6]);
+    const totalExecutions = U32.parseInt(parts[7]);
+    // It's safer to handle enum parsing explicitly
+    let status: VaultStatus;
+    const statusInt = U32.parseInt(parts[8]);
+    if (statusInt == VaultStatus.ACTIVE) status = VaultStatus.ACTIVE;
+    else if (statusInt == VaultStatus.PAUSED) status = VaultStatus.PAUSED;
+    else if (statusInt == VaultStatus.COMPLETED) status = VaultStatus.COMPLETED;
+    else if (statusInt == VaultStatus.INSUFFICIENT_BALANCE) status = VaultStatus.INSUFFICIENT_BALANCE;
+    else status = VaultStatus.PAUSED; // Default or throw error
+    const createdAt = U64.parseInt(parts[9]);
+
     return new VaultData(
-      new VaultConfig(
-        parts[0], parts[1], parts[2],
-        U32.parseInt(parts[3]), U64.parseInt(parts[4]), parts[5] === "1"
-      ),
-      U64.parseInt(parts[6]),
-      U32.parseInt(parts[7]),
-      U32.parseInt(parts[8]) as VaultStatus, // Consider using a safer way to cast enum
-      U64.parseInt(parts[9])
+      new VaultConfig(owner, baseToken, targetToken, interval, amount, autoCompound),
+      nextExecution,
+      totalExecutions,
+      status,
+      createdAt
     );
   }
 }
