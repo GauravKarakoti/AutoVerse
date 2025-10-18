@@ -99,7 +99,7 @@ export class DCAEngine {
     const targetSlot: Slot = new Slot(targetPeriod, targetThread);
 
     deferredCallRegister(
-      Context.callee() as unknown as string,
+      Context.callee().toString(),
       'executeDCA',
       targetSlot,
       maxGas,
@@ -117,7 +117,7 @@ export class DCAEngine {
     const targetSlot: Slot = new Slot(targetPeriod, targetThread);
 
     deferredCallRegister(
-      Context.callee() as unknown as string,
+      Context.callee().toString(),
       'executeBatchDCA',
       targetSlot,
       maxGas,

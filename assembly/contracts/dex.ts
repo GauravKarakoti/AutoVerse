@@ -30,7 +30,7 @@ export class WAGMIDEX {
     // Simplified price simulation
     // In production, this would query actual reserves and calculate output
     const simulatedPrice = 1.0; // 1:1 for testnet
-    return u64(amountIn * simulatedPrice * 0.997); // 0.3% fee
+    return u64(f64(amountIn) * simulatedPrice * 0.997);
   }
 
   private static transferTokens(token: Address, to: Address, amount: u64): boolean {

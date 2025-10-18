@@ -34,7 +34,7 @@ export class MassaWeb3Adapter {
         if (accounts.length > 0) {
           this.account = accounts[0] as MassaStationAccount;
           console.log('Connected account:', this.account.address);
-          this.client = await JsonRpcProvider.fromRPCUrl('https://test.massa.net/api/v2');
+          this.client = await JsonRpcProvider.fromRPCUrl('https://buildnet.massa.net/api/v2');
           return true;
         }
       }

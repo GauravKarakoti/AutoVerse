@@ -7,9 +7,9 @@ interface VaultCreatorProps {
 }
 
 const TOKENS = [
-  { address: 'AS12USDCtest12345678901234567890', symbol: 'USDC', decimals: 6 },
-  { address: 'AS12MASSA1234567890123456789012', symbol: 'MASSA', decimals: 9 },
-  { address: 'AS12WETHtest1234567890123456789', symbol: 'WETH', decimals: 18 },
+  { address: 'AS12k8viVmqPtRuXzCm6rKXjLgpQWqbuMjc37YHhB452KSUUb9FgL', symbol: 'USDC', decimals: 6 },
+  { address: 'AS12FW5Rs5YN2zdpEnqwj4iHUUPt9R4Eqjq2qtpJFNKW3mn33RuLU', symbol: 'WMAS', decimals: 9 },
+  { address: 'AS1gt69gqYD92dqPyE6DBRJ7KjpnQHqFzFs2YCkBcSnuxX5bGhBC', symbol: 'WETH', decimals: 18 },
 ];
 
 const INTERVALS = [

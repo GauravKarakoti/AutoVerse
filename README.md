@@ -14,7 +14,7 @@ Autoverse leverages the power of Massa's Autonomous Smart Contracts (ASCs) to cr
 ## 🚀 Live Demo
 
 *   **DeWeb Frontend:** `https://autoverse.massa`
-*   **Testnet Contract Address:** `AS12...XYZ`
+*   **Testnet Contract Address:** `AS1266zNf6AGQs8LFskr7dsa85pRLQTPw26sm732yqDSDeZQZHsEN`
 
 ## 🛠️ How to Run / Install
 

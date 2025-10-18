@@ -3,7 +3,7 @@ import { VaultData, VaultConfig } from '../types';
 import { massaWeb3 } from '../utils/massaWeb3';
 // IOperationData is removed from here
 
-const CONTRACT_ADDRESS = 'AS1yourContractAddressHere123456789'; // Replace with actual
+const CONTRACT_ADDRESS = 'AS1266zNf6AGQs8LFskr7dsa85pRLQTPw26sm732yqDSDeZQZHsEN';
 
 export const useVaults = () => {
   const [vaults, setVaults] = useState<VaultData[]>([]);
@@ -23,10 +23,12 @@ export const useVaults = () => {
         'getUserVaults',
         '' // User address would be parameter in production
       );
+      console.log('Fetched user vaults:', userVaults);
 
       // Parse and fetch individual vault data
       const vaultIds = userVaults.split(',').filter(id => id.length > 0);
       const vaultsData: VaultData[] = [];
+      console.log('Vault IDs to fetch:', vaultIds);
 
       for (const vaultId of vaultIds) {
         const vaultInfo = await massaWeb3.readContract(
@@ -34,6 +36,7 @@ export const useVaults = () => {
           'getVaultInfo',
           vaultId
         );
+        console.log(`Vault info for ID ${vaultId}:`, vaultInfo);
 
         if (vaultInfo) {
           const parts = vaultInfo.split(',');
@@ -51,6 +54,7 @@ export const useVaults = () => {
             status: ['ACTIVE', 'PAUSED', 'COMPLETED', 'INSUFFICIENT_BALANCE'][parseInt(parts[8])] as any,
             createdAt: parseInt(parts[9])
           });
+          console.log(`Parsed vault data for ID ${vaultId}:`, vaultsData[vaultsData.length - 1]);
         }
       }
 
@@ -75,6 +79,7 @@ export const useVaults = () => {
         parameter,
         '100000000' // 0.1 MASSA for deployment
       );
+      console.log('Vault creation operation ID:', result);
 
       // Refresh vaults list
       await fetchUserVaults();

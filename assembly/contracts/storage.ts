@@ -1,11 +1,12 @@
-import { VaultData, Address, VaultConfig } from "./types";
+import { VaultData, Address, VaultConfig, VaultStatus } from "./types";
 import { Storage } from '@massalabs/massa-as-sdk';
 import { stringToBytes, bytesToString } from "@massalabs/as-types";
 
 export class VaultStorage {
-  private static readonly VAULT_PREFIX = "vault_";
-  private static readonly USER_VAULTS_PREFIX = "user_vaults_";
-  private static readonly ACTIVE_VAULTS_KEY = "active_vaults";
+  // Add ': string' type annotation to these lines
+  private static readonly VAULT_PREFIX: string = "vault_";
+  private static readonly USER_VAULTS_PREFIX: string = "user_vaults_";
+  private static readonly ACTIVE_VAULTS_KEY: string = "active_vaults";
 
   static set(vaultId: string, data: VaultData): void {
     const serialized = this.serializeVaultData(data);
@@ -78,7 +79,7 @@ export class VaultStorage {
       ),
       U64.parseInt(parts[6]),
       U32.parseInt(parts[7]),
-      U32.parseInt(parts[8]) as any,
+      U32.parseInt(parts[8]) as VaultStatus, // Consider using a safer way to cast enum
       U64.parseInt(parts[9])
     );
   }
